@@ -11,7 +11,7 @@ import java.util.Scanner;
 
 public class TelaCriacaoDePerguntas {
 
-    private static final String PERGUNTAS_PATH = "db/com.perguntas/";
+    private static final String PERGUNTAS_PATH = "db/perguntas/";
     private final ArvoreBMais arvoreBMais = new ArvoreBMais(44, PERGUNTAS_PATH + "arvore_b.db");
     private final TelaInicioPosLogin telaInicioPosLogin;
     Scanner console = new Scanner(System.in);
@@ -20,8 +20,7 @@ public class TelaCriacaoDePerguntas {
         this.telaInicioPosLogin = telaInicioPosLogin;
     }
 
-    public void init(int userId) throws Exception {
-        CRUD<Pergunta> perguntaCRUD = new CRUD<>(Pergunta.class.getConstructor(), PERGUNTAS_PATH + "com.perguntas.db");
+    public void init(int userId, CRUD<Pergunta> perguntaCRUD) throws Exception {
 
         int option;
         do {
@@ -53,13 +52,9 @@ public class TelaCriacaoDePerguntas {
 
                             if (pergunta != null) {
                                 count++;
-                                SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy 'at' HH:mm:ss");
-                                Date date = new Date(pergunta.getCriacao());
 
                                 System.out.println("\n" + (i + 1) + ".");
-                                System.out.println(formatter.format(date));
-                                System.out.println(pergunta.getPergunta());
-                                System.out.println(pergunta.getPalavrasChave());
+                                System.out.println(pergunta);
                             }
                         }
                     }

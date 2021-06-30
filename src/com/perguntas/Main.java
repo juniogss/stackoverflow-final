@@ -2,7 +2,10 @@ package com.perguntas;
 
 
 import com.perguntas.crud.CRUD;
+import com.perguntas.models.Pergunta;
+import com.perguntas.models.Resposta;
 import com.perguntas.models.User;
+import com.perguntas.models.Vote;
 import com.perguntas.pcv.PCVEmail;
 import com.perguntas.structures.HashExtensivel;
 import com.perguntas.telas.TelaInicioPosLogin;
@@ -13,8 +16,9 @@ import java.util.Scanner;
 public class Main {
     private static final String USER_PATH = "db/user/";
     private static final String EMAIL_PATH = "db/email/";
-    private static final String PERGUNTAS_PATH = "db/com.perguntas/";
+    private static final String PERGUNTAS_PATH = "db/perguntas/";
     private static final String RESPOSTAS_PATH = "db/respostas/";
+    private static final String VOTE_PATH = "db/vote/";
 
     public static void main(String[] args) {
 
@@ -36,24 +40,36 @@ public class Main {
             File respostasFile = new File(RESPOSTAS_PATH);
             if (!respostasFile.exists()) respostasFile.mkdir();
 
-            new File(USER_PATH + "user.db").delete();
-            new File(USER_PATH + "hash_d.db").delete();
-            new File(USER_PATH + "hash_c.db").delete();
-            new File(EMAIL_PATH + "hash_c.db").delete();
-            new File(EMAIL_PATH + "hash_d.db").delete();
-            new File(PERGUNTAS_PATH + "com.perguntas.db").delete();
-            new File(PERGUNTAS_PATH + "arvore_b.db").delete();
-            new File(PERGUNTAS_PATH + "hash_a.db").delete();
-            new File(PERGUNTAS_PATH + "li_a.db").delete();
-            new File(PERGUNTAS_PATH + "li_b.db").delete();
-            new File(RESPOSTAS_PATH + "hash_a.db").delete();
-            new File(RESPOSTAS_PATH + "hash_b.db").delete();
-            new File(RESPOSTAS_PATH + "respostas.db").delete();
-            new File(RESPOSTAS_PATH + "arvRelacaoUserResp.db").delete();
-            new File(RESPOSTAS_PATH + "arvRelacaoPergResp.db").delete();
-            new File(RESPOSTAS_PATH + "arvRelacaoUserPerg.db").delete();
+            File votesFile = new File(VOTE_PATH);
+            if (!votesFile.exists()) votesFile.mkdir();
+
+//            new File(USER_PATH + "user.db").delete();
+//            new File(USER_PATH + "hash_d.db").delete();
+//            new File(USER_PATH + "hash_c.db").delete();
+//            new File(EMAIL_PATH + "hash_c.db").delete();
+//            new File(EMAIL_PATH + "hash_d.db").delete();
+//            new File(PERGUNTAS_PATH + "perguntas.db").delete();
+//            new File(PERGUNTAS_PATH + "arvore_b.db").delete();
+//            new File(PERGUNTAS_PATH + "hash_a.db").delete();
+//            new File(PERGUNTAS_PATH + "li_a.db").delete();
+//            new File(PERGUNTAS_PATH + "li_b.db").delete();
+//            new File(RESPOSTAS_PATH + "hash_a.db").delete();
+//            new File(RESPOSTAS_PATH + "hash_b.db").delete();
+//            new File(RESPOSTAS_PATH + "respostas.db").delete();
+//            new File(RESPOSTAS_PATH + "arvRelacaoUserResp.db").delete();
+//            new File(RESPOSTAS_PATH + "arvRelacaoPergResp.db").delete();
+//            new File(RESPOSTAS_PATH + "arvRelacaoUserPerg.db").delete();
+//            new File(VOTE_PATH + "hash_a.db").delete();
+//            new File(VOTE_PATH + "hash_b.db").delete();
+//            new File(VOTE_PATH + "user_questions.db").delete();
+//            new File(VOTE_PATH + "user_answers.db").delete();
+//            new File(VOTE_PATH + "votes.db").delete();
 
             CRUD<User> userCRUD = new CRUD<>(User.class.getConstructor(), USER_PATH + "user.db");
+            CRUD<Pergunta> perguntaCRUD = new CRUD<>(Pergunta.class.getConstructor(), PERGUNTAS_PATH + "perguntas.db");
+            CRUD<Resposta> respostaCRUD = new CRUD<>(Resposta.class.getConstructor(), RESPOSTAS_PATH + "respostas.db");
+            CRUD<Vote> voteCRUD = new CRUD<>(Vote.class.getConstructor(), VOTE_PATH + "votes.db");
+
             HashExtensivel<PCVEmail> hashEmail = new HashExtensivel<>(PCVEmail.class.getConstructor(), 4, EMAIL_PATH + "hash_d.db", EMAIL_PATH + "hash_c.db");
 
             int option;
@@ -93,7 +109,7 @@ public class Main {
                         String password = console.nextLine();
 
                         if (password.equals(read.getPassword())) {
-                            TelaInicioPosLogin inicio = new TelaInicioPosLogin();
+                            TelaInicioPosLogin inicio = new TelaInicioPosLogin(perguntaCRUD, respostaCRUD, voteCRUD);
                             inicio.init(id);
                         } else {
                             System.out.println("\nSenha incorreta!");

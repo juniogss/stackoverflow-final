@@ -3,30 +3,22 @@ package com.perguntas.telas;
 import com.perguntas.crud.CRUD;
 import com.perguntas.models.Pergunta;
 import com.perguntas.models.Resposta;
+import com.perguntas.models.Vote;
 import com.perguntas.structures.ArvoreBMais;
 import com.perguntas.structures.ListaInvertida;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class TelaPerguntas {
 
-    private static final String PERGUNTAS_PATH = "db/com.perguntas/";
+    private static final String PERGUNTAS_PATH = "db/perguntas/";
     private static final String RESPOSTAS_PATH = "db/respostas/";
     private static final Scanner console = new Scanner(System.in);
     private static CRUD<Resposta> arqRespostas;
     private static ArvoreBMais arvoreUR;
     private static ArvoreBMais arvorePR;
     private static ArvoreBMais arvoreUP;
-
-    static {
-        try {
-            arqRespostas = new CRUD<>(Resposta.class.getConstructor(), RESPOSTAS_PATH + "respostas.db");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     static {
         try {
@@ -52,7 +44,11 @@ public class TelaPerguntas {
         }
     }
 
-    public TelaPerguntas() {
+    VoteScreen voteScreen;
+
+    public TelaPerguntas(CRUD<Pergunta> perguntaCRUD, CRUD<Resposta> respostaCRUD, CRUD<Vote> voteCRUD) {
+        arqRespostas = respostaCRUD;
+        voteScreen = new VoteScreen(perguntaCRUD, respostaCRUD, voteCRUD);
     }
 
     //editado
@@ -282,7 +278,7 @@ public class TelaPerguntas {
 
     }
 
-    public static int confirmar() throws InterruptedException {
+    public static int confirmar() {
         int opcao;
         System.out.println("1 - Sim");
         System.out.println("2 - Não");
@@ -297,9 +293,8 @@ public class TelaPerguntas {
         return opcao;
     }
 
-    public void init() throws Exception {
+    public void init(CRUD<Pergunta> perguntaCRUD) throws Exception {
         ListaInvertida listaPalavraChave = new ListaInvertida(4, PERGUNTAS_PATH + "li_a.db", PERGUNTAS_PATH + "li_b.db");
-        CRUD<Pergunta> perguntaCRUD = new CRUD<>(Pergunta.class.getConstructor(), PERGUNTAS_PATH + "com.perguntas.db");
 
         String option;
         int nOption;
@@ -309,7 +304,7 @@ public class TelaPerguntas {
             System.out.println("        PERGUNTAS 1.0");
             System.out.println("-------------------------------");
             System.out.println("\nINICIO > PERGUNTAS");
-            System.out.println("\nBusque as com.perguntas por palavas chave separadas por ponto e virgula");
+            System.out.println("\nBusque as perguntas por palavas chave separadas por ponto e virgula");
             System.out.print("\nPalavras chave: ");
 
             option = console.nextLine();
@@ -339,23 +334,18 @@ public class TelaPerguntas {
             }
             //lista de objetos, ordena
             pgt.sort(Comparator.comparingInt(Pergunta::getNota));
-            //mostrar com.perguntas
+            //mostrar perguntas
             int count = 0;
             for (int i = 0; i < ((List<Pergunta>) pgt).size(); i++) {
                 Pergunta pergunta = ((List<Pergunta>) pgt).get(i);
 
                 if (pergunta != null) {
                     count++;
-                    SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy 'at' HH:mm:ss");
-                    Date date = new Date(pergunta.getCriacao());
-
                     System.out.println("\n" + (i + 1) + ".");
-                    System.out.println(formatter.format(date));
-                    System.out.println(pergunta.getPergunta());
-                    System.out.println(pergunta.getPalavrasChave());
+                    System.out.println(pergunta);
                 }
             }
-            //prompt
+
             if (count > 0) {
                 System.out.print("\nQual pergunta deseja visualizar? ");
                 int perg;
@@ -368,13 +358,8 @@ public class TelaPerguntas {
                     Pergunta perguntaS2 = perguntaCRUD.read(perg);
 
                     if (perguntaS2 != null) {
-                        SimpleDateFormat formatter2 = new SimpleDateFormat("dd-MM-yyyy 'at' HH:mm:ss");
-                        Date date = new Date(perguntaS2.getCriacao());
-
                         System.out.println("\n" + (perg) + ".");
-                        System.out.println(formatter2.format(date));
-                        System.out.println(perguntaS2.getPergunta());
-                        System.out.println(perguntaS2.getPalavrasChave());
+                        System.out.println(perguntaS2);
 
                         System.out.println("\nRESPOSTAS");
                         System.out.println("---------");
@@ -396,6 +381,10 @@ public class TelaPerguntas {
                                     break;
                                 case 1:
                                     respostas(perguntaS2);
+                                    break;
+                                case 2:
+                                    voteScreen.init(perguntaS2.getIdUsuario(), perguntaS2.getID());
+                                    break;
                                 default:
                                     System.out.println("Opção inválida ou não implementada");
                             }

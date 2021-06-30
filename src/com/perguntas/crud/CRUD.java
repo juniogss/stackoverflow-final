@@ -6,32 +6,38 @@ import com.perguntas.models.Pergunta;
 import com.perguntas.pcv.PCVPergunta;
 import com.perguntas.pcv.PCVResposta;
 import com.perguntas.pcv.PCVUser;
+import com.perguntas.pcv.PCVVote;
 import com.perguntas.structures.HashExtensivel;
 import com.perguntas.structures.ListaInvertida;
 
 import java.io.RandomAccessFile;
 import java.lang.reflect.Constructor;
+import java.util.Arrays;
 
 public class CRUD<T extends Register> {
 
     private static final String USER_PATH = "db/user/";
-    private static final String PERGUNTAS_PATH = "db/com.perguntas/";
+    private static final String PERGUNTAS_PATH = "db/perguntas/";
     private static final String RESPOSTAS_PATH = "db/respostas/";
+    private static final String VOTE_PATH = "db/vote/";
 
     private final HashExtensivel<PCVUser> hashUser;
     protected RandomAccessFile file;
     Constructor<T> constructor;
     HashExtensivel<PCVPergunta> hashPergunta;
     HashExtensivel<PCVResposta> hashResposta;
+    HashExtensivel<PCVVote> hashVote;
     ListaInvertida listaPalavraChave;
 
     public CRUD(Constructor<T> constructor, String fileName) throws Exception {
         this.constructor = constructor;
         file = new RandomAccessFile(fileName, "rw");
         file.writeInt(0);
+
         hashUser = new HashExtensivel<>(PCVUser.class.getConstructor(), 5, USER_PATH + "hash_d.db", USER_PATH + "hash_c.db");
         hashPergunta = new HashExtensivel<>(PCVPergunta.class.getConstructor(), 5, PERGUNTAS_PATH + "hash_a.db", PERGUNTAS_PATH + "hash_b.db");
         hashResposta = new HashExtensivel<>(PCVResposta.class.getConstructor(), 5, RESPOSTAS_PATH + "hash_a.db", RESPOSTAS_PATH + "hash_b.db");
+        hashVote = new HashExtensivel<>(PCVVote.class.getConstructor(), 5, VOTE_PATH + "hash_a.db", VOTE_PATH + "hash_b.db");
         listaPalavraChave = new ListaInvertida(4, PERGUNTAS_PATH + "li_a.db", PERGUNTAS_PATH + "li_b.db");
     }
 
@@ -58,18 +64,32 @@ public class CRUD<T extends Register> {
         file.writeShort(reg.length);
         file.write(reg);
 
-        if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.User")) {
-            hashUser.create(new PCVUser(object.getID(), pos));
-        } else if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.Pergunta")) {
-            hashPergunta.create(new PCVPergunta(object.getID(), pos));
-            String[] tokens = ((Pergunta) object).getPalavrasChave().split(";");
-            for (int i = 0; i < tokens.length; i++) {
-                listaPalavraChave.create(tokens[i], object.getID());
-            }
-        } else if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.Resposta")) {
-            hashResposta.create(new PCVResposta(object.getID(), pos));
+        file.seek(0);
+        System.out.println(file.readInt());
+        System.out.println(object.getID());
+        System.out.println(Arrays.toString(reg));
+        System.out.println(pos);
 
+        switch (constructor.getDeclaringClass().getName()) {
+            case "com.perguntas.models.User":
+                hashUser.create(new PCVUser(object.getID(), pos));
+                break;
+            case "com.perguntas.models.Pergunta":
+                hashPergunta.create(new PCVPergunta(object.getID(), pos));
+                String[] tokens = ((Pergunta) object).getPalavrasChave().split(";");
+                for (String token : tokens)
+                    listaPalavraChave.create(token, object.getID());
+                break;
+            case "com.perguntas.models.Resposta":
+                hashResposta.create(new PCVResposta(object.getID(), pos));
+                break;
+            case "com.perguntas.models.Vote":
+                System.out.println(object);
+                hashVote.create(new PCVVote(object.getID(), pos));
+                break;
         }
+
+
 
         return object.getID();
     }
@@ -85,23 +105,34 @@ public class CRUD<T extends Register> {
         PCVUser readUser;
         PCVPergunta readPergunta;
         PCVResposta readResposta;
+        PCVVote readVote;
         long position = 0;
 
-        if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.User")) {
-            readUser = hashUser.read(id);
+        switch (constructor.getDeclaringClass().getName()) {
+            case "com.perguntas.models.User":
+                readUser = hashUser.read(id);
 
-            if (readUser == null) return null;
-            position = readUser.getPosition();
-        } else if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.Pergunta")) {
-            readPergunta = hashPergunta.read(id);
+                if (readUser == null) return null;
+                position = readUser.getPosition();
+                break;
+            case "com.perguntas.models.Pergunta":
+                readPergunta = hashPergunta.read(id);
 
-            if (readPergunta == null) return null;
-            position = readPergunta.getPosition();
-        } else if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.Resposta")) {
-            readResposta = hashResposta.read(id);
+                if (readPergunta == null) return null;
+                position = readPergunta.getPosition();
+                break;
+            case "com.perguntas.models.Resposta":
+                readResposta = hashResposta.read(id);
 
-            if (readResposta == null) return null;
-            position = readResposta.getPosition();
+                if (readResposta == null) return null;
+                position = readResposta.getPosition();
+                break;
+            case "com.perguntas.models.Vote":
+                readVote = hashVote.read(id);
+
+                if (readVote == null) return null;
+                position = readVote.getPosition();
+                break;
         }
 
         if (position < 0) return null;
@@ -130,39 +161,47 @@ public class CRUD<T extends Register> {
      *
      * @param id identificador do registro
      */
-    public boolean delete(int id) throws Exception {
-        PCVUser readUser = null;
-        PCVPergunta readPergunta = null;
+    public void delete(int id) throws Exception {
+        PCVUser readUser;
+        PCVPergunta readPergunta;
         PCVResposta readResposta;
+        PCVVote readVote;
         long position = 0;
 
-        if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.User")) {
-            readUser = hashUser.read(id);
-            if (readUser == null) return false;
-            position = readUser.getPosition();
-        } else if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.Pergunta")) {
-            readPergunta = hashPergunta.read(id);
-            if (readPergunta == null) return false;
-            position = readPergunta.getPosition();
-            Pergunta pg = (Pergunta) read(id);
-            String[] tokens = ((Pergunta) pg).getPalavrasChave().split(";");
-            for (int i = 0; i < tokens.length; i++) {
-                listaPalavraChave.delete(tokens[i], id);
-            }
-        } else if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.Resposta")) {
-            readResposta = hashResposta.read(id);
-            if (readResposta == null) return false;
-            position = readResposta.getPosition();
+        switch (constructor.getDeclaringClass().getName()) {
+            case "com.perguntas.models.User":
+                readUser = hashUser.read(id);
+                if (readUser == null) return;
+                position = readUser.getPosition();
+                break;
+            case "com.perguntas.models.Pergunta":
+                readPergunta = hashPergunta.read(id);
+                if (readPergunta == null) return;
+                position = readPergunta.getPosition();
+                Pergunta pg = (Pergunta) read(id);
+                String[] tokens = pg.getPalavrasChave().split(";");
+                for (String token : tokens)
+                    listaPalavraChave.delete(token, id);
+                break;
+            case "com.perguntas.models.Resposta":
+                readResposta = hashResposta.read(id);
+                if (readResposta == null) return;
+                position = readResposta.getPosition();
+                break;
+            case "com.perguntas.models.Vote":
+                readVote = hashVote.read(id);
+                if (readVote == null) return;
+                position = readVote.getPosition();
+                break;
         }
 
-        if (position == -1) return false;
+        if (position == -1) return;
 
         file.seek(position);
         file.writeBoolean(false);
 
         hashUser.delete(id);
 
-        return true;
     }
 
     /**
@@ -171,36 +210,45 @@ public class CRUD<T extends Register> {
      *
      * @param obj objeto a ser atualizado
      */
-    public boolean update(T obj) throws Exception {
-        PCVUser readUser = null;
-        PCVPergunta readPergunta = null;
-        PCVResposta readResposta = null;
+    public void update(T obj) throws Exception {
+        PCVUser readUser;
+        PCVPergunta readPergunta;
+        PCVResposta readResposta;
+        PCVVote readVote;
         long position = 0;
 
-        if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.User")) {
-            readUser = hashUser.read(obj.getID());
-            if (readUser == null) return false;
-            position = readUser.getPosition();
-        } else if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.Pergunta")) {
-            readPergunta = hashPergunta.read(obj.getID());
-            if (readPergunta == null) return false;
-            position = readPergunta.getPosition();
-            Pergunta old = (Pergunta) read(obj.getID());
-            String[] tokensOld = ((Pergunta) old).getPalavrasChave().split(";");
-            for (int i = 0; i < tokensOld.length; i++) {
-                listaPalavraChave.delete(tokensOld[i], old.getID());
-            }
-            String[] tokens = ((Pergunta) obj).getPalavrasChave().split(";");
-            for (int i = 0; i < tokens.length; i++) {
-                listaPalavraChave.create(tokens[i], obj.getID());
-            }
-        } else if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.Resposta")) {
-            readResposta = hashResposta.read(obj.getID());
-            if (readResposta == null) return false;
-            position = readResposta.getPosition();
+        switch (constructor.getDeclaringClass().getName()) {
+            case "com.perguntas.models.User":
+                readUser = hashUser.read(obj.getID());
+                if (readUser == null) return;
+                position = readUser.getPosition();
+                break;
+            case "com.perguntas.models.Pergunta":
+                readPergunta = hashPergunta.read(obj.getID());
+                if (readPergunta == null) return;
+                position = readPergunta.getPosition();
+                Pergunta old = (Pergunta) read(obj.getID());
+                String[] tokensOld = old.getPalavrasChave().split(";");
+                for (String s : tokensOld)
+                    listaPalavraChave.delete(s, old.getID());
+
+                String[] tokens = ((Pergunta) obj).getPalavrasChave().split(";");
+                for (String token : tokens)
+                    listaPalavraChave.create(token, obj.getID());
+                break;
+            case "com.perguntas.models.Resposta":
+                readResposta = hashResposta.read(obj.getID());
+                if (readResposta == null) return;
+                position = readResposta.getPosition();
+                break;
+            case "com.perguntas.models.Vote":
+                readVote = hashVote.read(obj.getID());
+                if (readVote == null) return;
+                position = readVote.getPosition();
+                break;
         }
 
-        if (position < 0) return false;
+        if (position < 0) return;
 
         file.seek(position);
         boolean lap = file.readBoolean();
@@ -208,7 +256,7 @@ public class CRUD<T extends Register> {
         long lapPosition = file.getFilePointer();
         long objID = file.readInt();
 
-        if (!lap || objID != obj.getID()) return false;
+        if (!lap || objID != obj.getID()) return;
 
         byte[] reg = new byte[size];
         file.seek(lapPosition);
@@ -227,20 +275,25 @@ public class CRUD<T extends Register> {
             file.writeBoolean(false);
             file.seek(file.length());
 
-            if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.User")) {
-                hashUser.update(new PCVUser(obj.getID(), file.getFilePointer()));
-            } else if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.Pergunta")) {
-                hashPergunta.update(new PCVPergunta(obj.getID(), file.getFilePointer()));
-            } else if (constructor.getDeclaringClass().getName().equals("com.com.perguntas.models.Resposta")) {
-                hashResposta.update(new PCVResposta(obj.getID(), file.getFilePointer()));
+            switch (constructor.getDeclaringClass().getName()) {
+                case "com.perguntas.models.User":
+                    hashUser.update(new PCVUser(obj.getID(), file.getFilePointer()));
+                    break;
+                case "com.perguntas.models.Pergunta":
+                    hashPergunta.update(new PCVPergunta(obj.getID(), file.getFilePointer()));
+                    break;
+                case "com.perguntas.models.Resposta":
+                    hashResposta.update(new PCVResposta(obj.getID(), file.getFilePointer()));
+                    break;
+                case "com.perguntas.models.Vote":
+                    hashVote.update(new PCVVote(obj.getID(), file.getFilePointer()));
+                    break;
             }
 
             file.writeBoolean(true);
             file.writeShort(oldObj.length);
-
         }
 
         file.write(oldObj);
-        return true;
     }
 }

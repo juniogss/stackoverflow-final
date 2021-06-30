@@ -1,15 +1,23 @@
 package com.perguntas.telas;
 
+import com.perguntas.crud.CRUD;
+import com.perguntas.models.Pergunta;
+import com.perguntas.models.Resposta;
+import com.perguntas.models.Vote;
+
 import java.io.IOException;
 import java.util.Scanner;
 
 public class TelaInicioPosLogin {
 
+    private final CRUD<Pergunta> perguntaCRUD;
     Scanner console = new Scanner(System.in);
     TelaCriacaoDePerguntas criacaoDePerguntas = new TelaCriacaoDePerguntas(this);
-    TelaPerguntas perguntas = new TelaPerguntas();
+    TelaPerguntas perguntas;
 
-    public TelaInicioPosLogin() throws IOException {
+    public TelaInicioPosLogin(CRUD<Pergunta> perguntaCRUD, CRUD<Resposta> respostaCRUD, CRUD<Vote> voteCRUD) throws IOException {
+        this.perguntaCRUD = perguntaCRUD;
+        perguntas = new TelaPerguntas(perguntaCRUD, respostaCRUD, voteCRUD);
     }
 
     public void init(int id) throws Exception {
@@ -20,8 +28,8 @@ public class TelaInicioPosLogin {
             System.out.println("        PERGUNTAS 1.0");
             System.out.println("-------------------------------");
             System.out.println("\nINICIO");
-            System.out.println("\n1) Criação de com.perguntas");
-            System.out.println("2) Consultar/responder com.perguntas");
+            System.out.println("\n1) Criação de perguntas");
+            System.out.println("2) Consultar/responder perguntas");
             System.out.println("3) Notificações: 0");
             System.out.println("\n0) Sair");
             System.out.print("\nOpção: ");
@@ -34,10 +42,10 @@ public class TelaInicioPosLogin {
 
             switch (option) {
                 case 1:
-                    criacaoDePerguntas.init(id);
+                    criacaoDePerguntas.init(id, perguntaCRUD);
                     break;
                 case 2:
-                    perguntas.init();
+                    perguntas.init(perguntaCRUD);
                     break;
                 case 0:
                     break;

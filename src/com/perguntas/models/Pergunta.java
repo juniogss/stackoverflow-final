@@ -130,8 +130,10 @@ public class Pergunta implements Register {
     public String toString() {
 
         SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy 'at' HH:mm:ss");
-        String date = formatter.format(new Date(criacao));
+        String date = "Criada em " + formatter.format(new Date(criacao));
+        String keywords = "Palavras chave: " + palavrasChave;
+        String note = "Nota: " + nota;
 
-        return date + "\n" + pergunta + "\n" + palavrasChave;
+        return date + "\n" + pergunta + "\n" + keywords + "\n" + note;
     }
 }
