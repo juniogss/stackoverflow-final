@@ -65,10 +65,6 @@ public class CRUD<T extends Register> {
         file.write(reg);
 
         file.seek(0);
-        System.out.println(file.readInt());
-        System.out.println(object.getID());
-        System.out.println(Arrays.toString(reg));
-        System.out.println(pos);
 
         switch (constructor.getDeclaringClass().getName()) {
             case "com.perguntas.models.User":
@@ -84,12 +80,9 @@ public class CRUD<T extends Register> {
                 hashResposta.create(new PCVResposta(object.getID(), pos));
                 break;
             case "com.perguntas.models.Vote":
-                System.out.println(object);
                 hashVote.create(new PCVVote(object.getID(), pos));
                 break;
         }
-
-
 
         return object.getID();
     }
